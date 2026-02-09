@@ -1,0 +1,16 @@
+{
+    "code-runner.executorMap": {
+        "v": "cd $dir && make -C ../dataproc_dv all",
+        "verilog": "cd $dir && make -C ../dataproc_dv all"
+    },
+    "code-runner.runInTerminal": true,
+    "code-runner.ignoreSelection": true,
+    "[verilog]": {
+        "editor.defaultFormatter": "mshr-h.veriloghdl"
+    },
+    "files.exclude": {
+        "**/*.o": true,
+        "**/*.vvp": false,
+        "**/*.vcd": false
+    }
+}

@@ -31,11 +31,35 @@ module tb_data_prod_proc;
     wire valid;
     wire ready;
 
-
 	/* Write your tb logic for your combined design here */
+    
+    // Output signals from the processor
+    wire [7:0] processed_pixel;
+    wire       processed_valid;
+    reg        processed_ready = 1'b1; // Simulate that the sink is always ready
 
+    // Simulation Control Logic
+    initial begin
+        // 1. Create a waveform file to view in GTKWave
+        $dumpfile("data_proc_sim.vcd");
+        $dumpvars(0, tb_data_prod_proc);
 
+        // 2. Wait for the system to come out of reset
+        wait(resetn && sensor_resetn);
+        $display("--- System Reset Released ---");
 
+        // 3. Monitor the data flow
+        // We will stop the simulation after 100 pixels are processed
+        repeat (100) begin
+            @(posedge clk);
+            if (processed_valid && processed_ready) begin
+                $display("Time: %t | Input: %h | Processed: %h", $time, pixel, processed_pixel);
+            end
+        end
+
+        $display("--- Simulation Finished ---");
+        $finish;
+    end
 
 	/*---------------------------------------------------*/
 
@@ -43,8 +67,23 @@ module tb_data_prod_proc;
         .clk(clk),
         .rstn(resetn),
 
-        // Fill the rest
+        // CPU Programming Interface (Driving with constants for testing)
+        .mem_addr(32'h0),
+        .mem_wdata(32'h0),
+        .mem_valid(1'b0),
+        .mem_wstrb(4'h0),
+        .mem_ready(),
+        .mem_rdata(),
 
+        // Streaming Input (Connected to Producer)
+        .in_data(pixel),
+        .in_valid(valid),
+        .in_ready(ready), // This flows back to data_producer to handle CDC
+
+        // Streaming Output
+        .out_data(processed_pixel),
+        .out_valid(processed_valid),
+        .out_ready(processed_ready)
 	);
 
 	data_prod data_producer (
@@ -54,6 +93,5 @@ module tb_data_prod_proc;
         .pixel(pixel),
         .valid(valid)
 	);
-
 
 endmodule

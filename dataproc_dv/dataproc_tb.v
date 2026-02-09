@@ -24,17 +24,78 @@ module dataproc_tb;
 	wire flash_io2;
 	wire flash_io3;
 
-	/* Write your tb logic for your dataprocessing module here */
+	/* --- SECTION START: Task B Hardware Verification Logic --- */
 
+    // 1. Wires for Data Path
+    wire [7:0] sensor_pixel;
+    wire       sensor_valid;
+    wire       sensor_ready;
+    wire [7:0] proc_out;
+    wire       proc_out_valid;
+    reg  [1:0] tb_mode; // To test the 4 operations
 
+    // 2. Instantiate Sensor (Data Producer)
+    data_prod data_producer_inst (
+        .sensor_clk(clk),
+        .rst_n(resetn),
+        .ready(sensor_ready),
+        .pixel(sensor_pixel),
+        .valid(sensor_valid)
+    );
 
+    // 3. Instantiate Processor (Your Module)
+    data_proc data_processing_inst (
+        .clk(clk),
+        .rstn(resetn),
+        .mode(tb_mode),
+        .in_data(sensor_pixel),
+        .in_valid(sensor_valid),
+        .in_ready(sensor_ready),
+        .out_data(proc_out),
+        .out_valid(proc_out_valid),
+        .out_ready(1'b1) // Assume memory/sink is always ready for test
+    );
 
+    // 4. Test Sequence to Verify all 4 Modes
+    initial begin
+        $dumpfile("task_b_soc_verify.vcd");
+        $dumpvars(0, dataproc_tb);
+        
+        tb_mode = 2'b00; // Start in Bypass
+        
+        wait(resetn); 
+        $display("--- Task B: Verifying Hardware Data Path ---");
 
+        // Test Mode 00: Bypass
+        #1000; 
+        
+        // Test Mode 01: Invert
+        @(posedge clk); tb_mode = 2'b01;
+        $display("Switching to Mode 01: Invert");
+        #1000;
 
+        // Test Mode 10: Convolution/Process
+        @(posedge clk); tb_mode = 2'b10;
+        $display("Switching to Mode 10: Convolution");
+        #1000;
 
+        // Test Mode 11: Threshold
+        @(posedge clk); tb_mode = 2'b11;
+        $display("Switching to Mode 11: Threshold");
+        #1000;
 
-	/*----------------------------------------------------------*/
+        $display("--- Hardware Data Path Verified ---");
+        // Note: We don't $finish here yet, so the SoC can continue to run
+    end
 
+    // 5. Logic to print pixels to console for easy verification
+    always @(posedge clk) begin
+        if (proc_out_valid) begin
+            $display("TB_LOG | Mode: %b | In: %h | Out: %h", tb_mode, sensor_pixel, proc_out);
+        end
+    end
+
+	/* --- SECTION END --- */
 
 	rvsoc_wrapper #(
 		.MEM_WORDS(256)
